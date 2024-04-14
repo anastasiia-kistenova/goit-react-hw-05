@@ -1,35 +1,44 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import axios from "axios";
+import { useDetailsSearch } from "../../hooks/useDetailsSearch";
+import ErrorMessage from "../ErrorMessage/ErrorMessage.jsx";
+import Loader from "../Loader/Loader";
+import css from "./MovieCast.module.css";
+
 
 const MovieCast = () => {
-  const { movieId } = useParams();
-  const [cast, setCast] = useState([]);
+  const { loading, error, imageUrl, movieCast, defaultImg } =
+    useDetailsSearch();
 
-  useEffect(() => {
-    axios.get(`https://api.themoviedb.org/3/movie/${movieId}/credits`, {
-      headers: {
-        Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhNDZiNmIxYzRjYmM5YThiYjJiMDMxYWE5NzNiYmQyZSIsInN1YiI6IjY2MTgwOGE5ZDhmNDRlMDE3YzJmMWRiOSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.GWxBxPnivlKlI9-9Y_WaGpJq7urxVBOm-SJj5oHxp_U"
-      }
-    })
-    .then(response => {
-      setCast(response.data.cast);
-    })
-    .catch(error => {
-      console.error("Error fetching movie cast:", error);
-    });
-  }, [movieId]);
 
   return (
-    <div>
-      <h2>Cast</h2>
-      <ul>
-        {cast.map(actor => (
-          <li key={actor.id}>{actor.name}</li>
-        ))}
+    <>
+      {loading && <Loader />}
+      {error && <ErrorMessage />}
+      <ul className={css.castList}>
+        {Array.isArray(movieCast) &&
+          movieCast.map((cast) => (
+            <li key={cast.id} className={css.castItem}>
+              <img
+                src={
+                  cast.profile_path
+                    ? `${imageUrl}${cast.profile_path}`
+                    : defaultImg
+                }
+                alt={cast.name}
+              />
+              <div>
+                <p>{cast.name}</p>
+                <p>{`Character: ${cast.character}`}</p>
+              </div>
+            </li>
+          ))}
       </ul>
-    </div>
+    </>
   );
 };
 
+
 export default MovieCast;
+
+
+
+

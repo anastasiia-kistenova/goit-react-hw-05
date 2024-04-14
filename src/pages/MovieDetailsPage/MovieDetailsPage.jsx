@@ -1,35 +1,76 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import axios from "axios";
+import React, { useRef, Suspense } from "react";
+import { Link, Route, Routes, useLocation } from "react-router-dom";
+import ErrorMessage from "../../components/ErrorMessage/ErrorMessage.jsx";
+import Loader from "../../components/Loader/Loader";
+import css from "./MovieDetailsPage.module.css";
+import { useDetailsSearch } from "../../hooks/useDetailsSearch";
+
+
+
+
+const MovieReviews = React.lazy(() =>
+  import("../../components/MovieReviews/MovieReviews")
+);
+const MovieCast = React.lazy(() => import("../../components/MovieCast/MovieCast"));
+
 
 const MovieDetailsPage = () => {
-  const { movieId } = useParams();
-  const [movie, setMovie] = useState(null);
+  const { loading, error, movieData, imageUrl, defaultImg } =
+    useDetailsSearch();
+  const location = useLocation();
+  const backLinkRef = useRef(location.state ?? "/");
 
-  useEffect(() => {
-    axios.get(`https://api.themoviedb.org/3/movie/${movieId}`, {
-      headers: {
-        Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhNDZiNmIxYzRjYmM5YThiYjJiMDMxYWE5NzNiYmQyZSIsInN1YiI6IjY2MTgwOGE5ZDhmNDRlMDE3YzJmMWRiOSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.GWxBxPnivlKlI9-9Y_WaGpJq7urxVBOm-SJj5oHxp_U"
-      }
-    })
-    .then(response => {
-      setMovie(response.data);
-    })
-    .catch(error => {
-      console.error("Error fetching movie details:", error);
-    });
-  }, [movieId]);
-
-  if (!movie) return <div>Loading...</div>;
 
   return (
     <div>
-      <h2>{movie.title}</h2>
-      <p>{movie.overview}</p>
-      <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title} />
-      <p>Genre: {movie.genres.map(genre => genre.name).join(", ")}</p>
+      {loading && <Loader />}
+      {error && <ErrorMessage />}
+      <Link className={css.back} to={backLinkRef.current}>Go back</Link>
+      {movieData && (
+        <>
+          <div className={css.movieContainer}>
+            <img
+              className={css.movieImg}
+              src={
+                movieData.poster_path
+                  ? `${imageUrl}${movieData.poster_path}`
+                  : defaultImg
+              }
+              width={250}
+              alt={movieData.original_title}
+            />
+            <div className={css.movieDetails}>
+              <h2>{movieData.title}</h2>
+              <p>{`User Score: ${Math.round(movieData.vote_average * 10)}%`}</p>
+              <h3>Overview</h3>
+              <p>{movieData.overview}</p>
+              <h3>Genres</h3>
+              <p>{movieData.genres.map((genre) => genre.name).join(" ")}</p>
+            </div>
+          </div>
+          <div>
+            <p className={css.linkInfo}>Additional information:</p>
+            <Link className={css.linkDetails} to="cast">
+              Casts
+            </Link>
+            <Link className={css.linkDetails} to="reviews">
+              Reviews
+            </Link>
+            <Suspense fallback={<Loader />}>
+              <Routes>
+                <Route path="/cast" element={<MovieCast />} />
+                <Route path="/reviews" element={<MovieReviews />} />
+              </Routes>
+            </Suspense>
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
+
 export default MovieDetailsPage;
+
+
+
